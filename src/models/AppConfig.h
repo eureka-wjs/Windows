@@ -27,6 +27,7 @@ public:
         , m_minFileSize(10 * 1024 * 1024)  // 10MB
         , m_useHashMatching(false)
         , m_workingDirectory("")
+        , m_debugMode(false)
     {}
     
     // Getter 和 Setter
@@ -59,6 +60,9 @@ public:
     
     QString workingDirectory() const { return m_workingDirectory; }
     void setWorkingDirectory(const QString& dir) { m_workingDirectory = dir; }
+    
+    bool debugMode() const { return m_debugMode; }
+    void setDebugMode(bool debug) { m_debugMode = debug; }
     
     /**
      * @brief 获取已处理记录文件路径
@@ -95,7 +99,7 @@ public:
         settings->beginGroup("Subtitle");
         m_apiKey = settings->value("ApiKey", "").toString();
         m_languages = settings->value("Languages", QStringList({"chi", "zh", "zh-tw"})).toStringList();
-        m_videoExtensions = settings->value("VideoExtensions", 
+        m_videoExtensions = settings->value("VideoExtensions",
             QStringList({".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv"})).toStringList();
         m_minScore = settings->value("MinScore", 0).toInt();
         m_timeout = settings->value("Timeout", 30).toInt();
@@ -104,6 +108,7 @@ public:
         m_minFileSize = settings->value("MinFileSize", 10 * 1024 * 1024).toLongLong();
         m_useHashMatching = settings->value("UseHashMatching", false).toBool();
         m_workingDirectory = settings->value("WorkingDirectory", "").toString();
+        m_debugMode = settings->value("DebugMode", false).toBool();
         settings->endGroup();
         
         settings->beginGroup("Window");
@@ -116,7 +121,7 @@ public:
      * @brief 保存配置到 QSettings
      * @param settings QSettings 对象
      */
-    void saveToSettings(QSettings* settings) {
+    void saveToSettings(QSettings* settings) const {
         settings->beginGroup("Subtitle");
         settings->setValue("ApiKey", m_apiKey);
         settings->setValue("Languages", m_languages);
@@ -128,6 +133,7 @@ public:
         settings->setValue("MinFileSize", m_minFileSize);
         settings->setValue("UseHashMatching", m_useHashMatching);
         settings->setValue("WorkingDirectory", m_workingDirectory);
+        settings->setValue("DebugMode", m_debugMode);
         settings->endGroup();
         
         settings->beginGroup("Window");
@@ -208,20 +214,21 @@ public:
     void setWindowState(const QByteArray& state) { m_windowState = state; }
 
 private:
-    QString m_apiKey;              ///< API Token
-    QStringList m_languages;       ///< 目标语言列表
-    QStringList m_videoExtensions; ///< 视频文件扩展名
-    int m_minScore;                ///< 最小匹配分数
-    int m_timeout;                 ///< 请求超时（秒）
-    int m_maxRetries;              ///< 最大重试次数
-    int m_batchDelay;              ///< 批量处理延迟（秒）
-    qint64 m_minFileSize;          ///< 最小文件大小
-    bool m_useHashMatching;        ///< 是否使用哈希匹配
-    QString m_workingDirectory;    ///< 工作目录
-    
-    // 窗口状态（不序列化）
-    QByteArray m_windowGeometry;   ///< 窗口几何形状
-    QByteArray m_windowState;      ///< 窗口状态
+   QString m_apiKey;              ///< API Token
+   QStringList m_languages;       ///< 目标语言列表
+   QStringList m_videoExtensions; ///< 视频文件扩展名
+   int m_minScore;                ///< 最小匹配分数
+   int m_timeout;                 ///< 请求超时（秒）
+   int m_maxRetries;              ///< 最大重试次数
+   int m_batchDelay;              ///< 批量处理延迟（秒）
+   qint64 m_minFileSize;          ///< 最小文件大小
+   bool m_useHashMatching;        ///< 是否使用哈希匹配
+   QString m_workingDirectory;    ///< 工作目录
+   bool m_debugMode;              ///< 调试模式
+   
+   // 窗口状态（不序列化）
+   QByteArray m_windowGeometry;   ///< 窗口几何形状
+   QByteArray m_windowState;      ///< 窗口状态
 };
 
 #endif // APPCONFIG_H

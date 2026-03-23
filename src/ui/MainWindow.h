@@ -9,9 +9,9 @@
 #include <QMessageBox>
 #include <QThread>
 #include <QTimer>
-#include "src/core/ConfigManager.h"
-#include "src/core/SubtitleManager.h"
-#include "src/ui/LogWidget.h"
+#include "core/ConfigManager.h"
+#include "core/SubtitleManager.h"
+#include "ui/LogWidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowClass; }
@@ -31,29 +31,32 @@ public:
     ~MainWindow();
 
 private slots:
-    // UI 槽函数
-    void onApiTokenChanged();
-    void onSaveTokenClicked();
-    void onBrowseButtonClicked();
-    void onStartButtonClicked();
-    void onStopButtonClicked();
-    
-    // 拖放事件
-    void onDragEnterEvent(QDragEnterEvent* event) override;
-    void onDropEvent(QDropEvent* event) override;
+   // UI 槽函数
+   void onApiTokenChanged();
+   void onSaveTokenClicked();
+   void onVerifyTokenClicked();
+   void onDebugModeToggled();
+   void onBrowseButtonClicked();
+   void onStartButtonClicked();
+   void onStopButtonClicked();
     
     // 处理信号
-    void onProgressUpdated(int current, int total);
+    void onProgressUpdated(int current, int total, const QString& filePath);
     void onStatsUpdated(const ScanResult& result);
     void onLogMessage(Logger::Level level, const QString& message);
     void onProcessingComplete(const ScanResult& result);
     void onQuotaChanged(int quota);
 
+protected:
+   // 拖放事件处理
+   void dragEnterEvent(QDragEnterEvent* event) override;
+   void dropEvent(QDropEvent* event) override;
+
 private:
-    /**
-     * @brief 设置 UI
-     */
-    void setupUI();
+   /**
+    * @brief 设置 UI
+    */
+   void setupUI();
     
     /**
      * @brief 连接信号槽

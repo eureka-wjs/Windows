@@ -9,6 +9,7 @@
 #include <QDateTime>
 #include <QMutex>
 #include <QDir>
+#include <QStringConverter>
 
 /**
  * @brief 日志工具类
@@ -124,7 +125,7 @@ private:
         QFile file(m_logFile);
         if (file.open(QIODevice::Append | QIODevice::Text)) {
             QTextStream out(&file);
-            out.setCodec("UTF-8");
+            out.setEncoding(QStringConverter::Utf8);
             out << logLine;
             file.close();
         }

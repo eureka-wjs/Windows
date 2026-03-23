@@ -11,7 +11,7 @@
 #include <QDir>
 #include <QDateTime>
 #include <QMutex>
-#include "src/models/VideoFile.h"
+#include "models/VideoFile.h"
 
 /**
  * @brief 失败记录结构体
@@ -154,8 +154,8 @@ public:
         loadFailedData();
         
         QList<FailedRecord> records;
-        for (const QJsonObject& obj : m_failedData) {
-            records.append(FailedRecord::fromJson(obj));
+        for (const QJsonValue& val : m_failedData) {
+            records.append(FailedRecord::fromJson(val.toObject()));
         }
         return records;
     }
@@ -181,7 +181,7 @@ public:
         if (file.exists()) {
             file.remove();
         }
-        m_failedData.clear();
+        m_failedData = QJsonArray();
     }
     
     /**

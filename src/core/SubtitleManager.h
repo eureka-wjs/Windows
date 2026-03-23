@@ -5,15 +5,15 @@
 #include <QList>
 #include <QMap>
 #include <QTimer>
-#include "src/core/AssrtAPI.h"
-#include "src/core/HistoryManager.h"
-#include "src/core/ConfigManager.h"
-#include "src/models/VideoFile.h"
-#include "src/models/SubtitleInfo.h"
-#include "src/models/AppConfig.h"
-#include "src/utils/NameParser.h"
-#include "src/utils/FileUtils.h"
-#include "src/utils/Logger.h"
+#include "core/AssrtAPI.h"
+#include "core/HistoryManager.h"
+#include "core/ConfigManager.h"
+#include "models/VideoFile.h"
+#include "models/SubtitleInfo.h"
+#include "models/AppConfig.h"
+#include "utils/NameParser.h"
+#include "utils/FileUtils.h"
+#include "utils/Logger.h"
 
 /**
  * @brief 扫描结果结构体
@@ -67,6 +67,9 @@ public:
         // 创建日志对象
         m_logger = new Logger(ConfigManager::downloadLogPath(), this);
         
+        // 连接 Logger 的 logMessage 信号到 SubtitleManager 的 logMessage 信号
+        connect(m_logger, &Logger::logMessage, this, &SubtitleManager::logMessage);
+        
         // 创建历史记录管理器
         m_history = new HistoryManager(
             ConfigManager::processedLogPath(),
@@ -102,6 +105,13 @@ public:
     ScanResult scanFolder(const QString& folderPath, bool force = false);
     
     /**
+     * @brief 重新加载配置
+     */
+    void reloadConfig() {
+        m_config = m_configManager->loadConfig();
+    }
+    
+    /**
      * @brief 停止处理
      */
     void stop() {
@@ -131,8 +141,9 @@ signals:
      * @brief 进度更新信号
      * @param current 当前文件索引
      * @param total 总文件数
+     * @param filePath 当前处理的文件路径
      */
-    void progressUpdated(int current, int total);
+    void progressUpdated(int current, int total, const QString& filePath);
     
     /**
      * @brief 统计更新信号

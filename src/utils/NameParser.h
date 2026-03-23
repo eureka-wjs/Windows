@@ -146,7 +146,7 @@ public:
         
         // 变体 1: 移除 Dub/Dual 等音轨标签
         QRegularExpression noDubRe(R"(\s*(Dub|Dual|Multi.*Audio)\s*)", QRegularExpression::CaseInsensitiveOption);
-        QString noDub = query.replace(noDubRe, " ").trimmed();
+        QString noDub = QString(query).replace(noDubRe, " ").trimmed();
         QRegularExpression spaceRe(R"(\s+)");
         noDub = noDub.replace(spaceRe, " ").trimmed();
         if (!noDub.isEmpty() && noDub != query) {
@@ -218,7 +218,7 @@ public:
      */
     static QString simplifyName(const QString& name) {
         QRegularExpression bracketRe(R"(\s+\(.*?\))");
-        QString simplified = name.replace(bracketRe, "").trimmed();
+        QString simplified = QString(name).replace(bracketRe, "").trimmed();
         return simplified;
     }
 };

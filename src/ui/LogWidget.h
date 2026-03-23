@@ -6,7 +6,8 @@
 #include <QScrollBar>
 #include <QVBoxLayout>
 #include <QLabel>
-#include "src/utils/Logger.h"
+#include <QFont>
+#include "utils/Logger.h"
 
 /**
  * @brief 日志显示控件

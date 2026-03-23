@@ -36,18 +36,33 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 ; 主程序
-Source: "release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "release\*.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "release\*.pdb"; DestDir: "{app}"; Flags: ignoreversion
+Source: "output\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "output\*.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "output\*.pdb"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Qt 平台插件
-Source: "release\platforms\*"; DestDir: "{app}\platforms"; Flags: ignoreversion recursesubdirs
+Source: "output\platforms\*"; DestDir: "{app}\platforms"; Flags: ignoreversion recursesubdirs
 
 ; Qt 样式插件
-Source: "release\styles\*"; DestDir: "{app}\styles"; Flags: ignoreversion recursesubdirs
+Source: "output\styles\*"; DestDir: "{app}\styles"; Flags: ignoreversion recursesubdirs
 
 ; Qt 图片插件
-Source: "release\imageformats\*"; DestDir: "{app}\imageformats"; Flags: ignoreversion recursesubdirs
+Source: "output\imageformats\*"; DestDir: "{app}\imageformats"; Flags: ignoreversion recursesubdirs
+
+; Qt 翻译文件
+Source: "output\translations\*"; DestDir: "{app}\translations"; Flags: ignoreversion
+
+; Qt 图标引擎插件
+Source: "output\iconengines\*"; DestDir: "{app}\iconengines"; Flags: ignoreversion recursesubdirs
+
+; Qt 网络信息插件
+Source: "output\networkinformation\*"; DestDir: "{app}\networkinformation"; Flags: ignoreversion recursesubdirs
+
+; Qt TLS 插件
+Source: "output\tls\*"; DestDir: "{app}\tls"; Flags: ignoreversion recursesubdirs
+
+; Qt 通用触摸插件
+Source: "output\generic\*"; DestDir: "{app}\generic"; Flags: ignoreversion recursesubdirs
 
 ; 图标文件（如果存在）
 Source: "resources\icons\icon.ico"; DestDir: "{app}"; Flags: ignoreversion

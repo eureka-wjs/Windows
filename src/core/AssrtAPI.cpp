@@ -232,10 +232,10 @@ bool AssrtAPI::download(int subId, const QString& savePath, const QString& video
         // 等待下载完成
         QEventLoop loop;
         QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-        QTimer::timeout([&]() {
+        QTimer::singleShot(TIMEOUT * 1000, &loop, [&]() {
             reply->abort();
             loop.quit();
-        }, TIMEOUT * 1000);
+        });
         loop.exec();
         
         if (reply->error() != QNetworkReply::NoError) {
@@ -401,10 +401,10 @@ QJsonDocument AssrtAPI::sendGetRequest(const QString& url, const QMap<QString, Q
     // 等待响应
     QEventLoop loop;
     QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    QTimer::timeout([&]() {
+    QTimer::singleShot(TIMEOUT * 1000, &loop, [&]() {
         reply->abort();
         loop.quit();
-    }, TIMEOUT * 1000);
+    });
     loop.exec();
     
     QJsonDocument result;

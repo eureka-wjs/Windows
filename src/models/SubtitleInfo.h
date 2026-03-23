@@ -5,6 +5,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDateTime>
+#include <QFileInfo>
 
 /**
  * @brief 字幕信息数据模型

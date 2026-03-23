@@ -5,7 +5,8 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QDir>
-#include "src/models/AppConfig.h"
+#include <QCoreApplication>
+#include "models/AppConfig.h"
 
 /**
  * @brief 配置管理类

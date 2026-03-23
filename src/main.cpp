@@ -1,12 +1,11 @@
 #include <QApplication>
 #include <QStyleFactory>
 #include <QFont>
-#include "src/ui/MainWindow.h"
+#include "ui/MainWindow.h"
 
 int main(int argc, char *argv[])
 {
-    // 启用高 DPI 支持
-    QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    // Qt6 中高 DPI 支持默认启用
     QApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
     
     QApplication app(argc, argv);

@@ -4,6 +4,7 @@
 #include <QUrl>
 #include <QStyle>
 #include <QApplication>
+#include <QPointer>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -90,12 +91,20 @@ void MainWindow::setupUI()
 void MainWindow::setupConnections()
 {
     // API Token 变更
-    connect(m_ui->apiTokenEdit, &QLineEdit::textChanged, 
+    connect(m_ui->apiTokenEdit, &QLineEdit::textChanged,
             this, &MainWindow::onApiTokenChanged);
     
     // 保存 Token 按钮
     connect(m_ui->saveTokenButton, &QPushButton::clicked,
             this, &MainWindow::onSaveTokenClicked);
+    
+    // 验证 Token 按钮
+    connect(m_ui->verifyTokenButton, &QPushButton::clicked,
+            this, &MainWindow::onVerifyTokenClicked);
+    
+    // 调试模式复选框
+    connect(m_ui->debugModeCheckBox, &QCheckBox::checkStateChanged,
+            this, &MainWindow::onDebugModeToggled);
     
     // 浏览按钮
     connect(m_ui->browseButton, &QPushButton::clicked,
@@ -125,6 +134,9 @@ void MainWindow::loadConfig()
         m_ui->workingDirEdit->setText(config.workingDirectory());
     }
     
+    // 加载调试模式
+    m_ui->debugModeCheckBox->setChecked(config.debugMode());
+    
     // 恢复窗口状态
     if (!config.windowGeometry().isEmpty()) {
         restoreGeometry(config.windowGeometry());
@@ -143,6 +155,9 @@ void MainWindow::saveConfig()
     
     // 保存工作目录
     config.setWorkingDirectory(m_ui->workingDirEdit->text());
+    
+    // 保存调试模式
+    config.setDebugMode(m_ui->debugModeCheckBox->isChecked());
     
     // 保存窗口状态
     config.setWindowGeometry(saveGeometry());
@@ -183,6 +198,17 @@ void MainWindow::onApiTokenChanged()
     updateUIState();
 }
 
+void MainWindow::onDebugModeToggled()
+{
+    // 保存配置
+    saveConfig();
+    
+    // 在日志中显示调试模式状态
+    if (m_logWidget && m_ui->debugModeCheckBox->isChecked()) {
+        m_logWidget->appendLog(Logger::Info, "调试模式已开启，将显示详细的处理信息");
+    }
+}
+
 void MainWindow::onSaveTokenClicked()
 {
     QString token = m_ui->apiTokenEdit->text();
@@ -193,6 +219,61 @@ void MainWindow::onSaveTokenClicked()
     
     m_configManager->setApiKey(token);
     QMessageBox::information(this, "成功", "API Token 已保存");
+}
+
+void MainWindow::onVerifyTokenClicked()
+{
+    QString token = m_ui->apiTokenEdit->text();
+    if (token.isEmpty()) {
+        QMessageBox::warning(this, "警告", "请输入 API Token");
+        return;
+    }
+    
+    // 禁用按钮，防止重复点击
+    m_ui->verifyTokenButton->setEnabled(false);
+    m_ui->verifyTokenButton->setText("验证中...");
+    
+    // 创建临时 API 对象进行验证
+    AssrtAPI* api = new AssrtAPI(this);
+    Logger* tempLogger = new Logger(ConfigManager::downloadLogPath(), this);
+    
+    if (!api->initialize(token, tempLogger)) {
+        QMessageBox::critical(this, "错误", "API 初始化失败，请检查 Token 格式");
+        m_ui->verifyTokenButton->setEnabled(true);
+        m_ui->verifyTokenButton->setText("验证");
+        return;
+    }
+    
+    // 验证 Token（通过检查配额）
+    bool isValid = api->checkQuota(true);
+    int quota = api->quota();
+    
+    // 清理
+    delete tempLogger;
+    delete api;
+    
+    // 恢复按钮状态
+    m_ui->verifyTokenButton->setEnabled(true);
+    m_ui->verifyTokenButton->setText("验证");
+    
+    // 显示结果
+    if (isValid) {
+        QMessageBox::information(this, "验证成功",
+            QString("API Token 有效！\n当前配额：%1 次/分钟").arg(quota));
+        if (m_logWidget) {
+            m_logWidget->appendLog(Logger::Success,
+                QString("API Token 验证成功，配额：%1 次/分钟").arg(quota));
+        }
+    } else {
+        QMessageBox::warning(this, "验证失败",
+            "API Token 无效或配额不足，请检查：\n"
+            "1. Token 是否正确（32 位）\n"
+            "2. 网络连接是否正常\n"
+            "3. API 配额是否已用完");
+        if (m_logWidget) {
+            m_logWidget->appendLog(Logger::Error, "API Token 验证失败");
+        }
+    }
 }
 
 void MainWindow::onBrowseButtonClicked()
@@ -210,14 +291,14 @@ void MainWindow::onBrowseButtonClicked()
     }
 }
 
-void MainWindow::onDragEnterEvent(QDragEnterEvent* event)
+void MainWindow::dragEnterEvent(QDragEnterEvent* event)
 {
     if (event->mimeData()->hasUrls()) {
         event->acceptProposedAction();
     }
 }
 
-void MainWindow::onDropEvent(QDropEvent* event)
+void MainWindow::dropEvent(QDropEvent* event)
 {
     QList<QUrl> urls = event->mimeData()->urls();
     if (urls.isEmpty()) {
@@ -243,6 +324,17 @@ void MainWindow::onDropEvent(QDropEvent* event)
 
 void MainWindow::onStartButtonClicked()
 {
+    // 调试日志：检查指针有效性
+    if (m_logWidget == nullptr) {
+        QMessageBox::critical(this, "错误", "日志控件未初始化，请重启程序");
+        return;
+    }
+    
+    if (m_ui == nullptr) {
+        QMessageBox::critical(this, "错误", "UI 未初始化，请重启程序");
+        return;
+    }
+    
     QString dir = m_ui->workingDirEdit->text();
     if (dir.isEmpty()) {
         QMessageBox::warning(this, "警告", "请先选择工作目录");
@@ -254,12 +346,30 @@ void MainWindow::onStartButtonClicked()
         return;
     }
     
+    // 检查 API Token
+    QString token = m_ui->apiTokenEdit->text();
+    if (token.isEmpty()) {
+        QMessageBox::warning(this, "警告", "请先输入 API Token");
+        return;
+    }
+    
     // 初始化字幕管理器
     if (m_subtitleManager == nullptr) {
         m_subtitleManager = new SubtitleManager(m_configManager);
         
         if (!m_subtitleManager->initialize()) {
-            QMessageBox::critical(this, "错误", "字幕管理器初始化失败，请检查 API Token 是否正确");
+            QMessageBox::critical(this, "错误",
+                "字幕管理器初始化失败，请检查：\n"
+                "1. API Token 是否正确\n"
+                "2. 网络连接是否正常\n"
+                "3. 日志文件路径是否可写");
+            return;
+        }
+        
+        // 验证 API
+        AssrtAPI* api = m_subtitleManager->api();
+        if (!api) {
+            QMessageBox::critical(this, "错误", "API 客户端初始化失败");
             return;
         }
         
@@ -272,7 +382,7 @@ void MainWindow::onStartButtonClicked()
                 this, &MainWindow::onLogMessage);
         connect(m_subtitleManager, &SubtitleManager::processingComplete,
                 this, &MainWindow::onProcessingComplete);
-        connect(m_subtitleManager->api(), &AssrtAPI::quotaChanged,
+        connect(api, &AssrtAPI::quotaChanged,
                 this, &MainWindow::onQuotaChanged);
     }
     
@@ -285,11 +395,23 @@ void MainWindow::onStartButtonClicked()
     m_logWidget->appendLog(Logger::Info, QString("开始处理目录：%1").arg(dir));
     
     // 在工作线程中处理
+    // 先清理旧的线程
+    if (m_workerThread != nullptr && m_workerThread->isRunning()) {
+        m_workerThread->quit();
+        m_workerThread->wait(3000);
+    }
+    
     m_workerThread = new QThread(this);
     m_subtitleManager->moveToThread(m_workerThread);
     
-    connect(m_workerThread, &QThread::started, [this, dir]() {
-        m_subtitleManager->scanFolder(dir);
+    // 使用 QPointer 防止悬空指针
+    QPointer<SubtitleManager> subManager(m_subtitleManager);
+    connect(m_workerThread, &QThread::started, [subManager, dir]() {
+        if (subManager) {
+            // 重新加载配置，确保调试模式等设置生效
+            subManager->reloadConfig();
+            subManager->scanFolder(dir);
+        }
     });
     connect(m_workerThread, &QThread::finished, m_workerThread, &QThread::deleteLater);
     
@@ -304,10 +426,14 @@ void MainWindow::onStopButtonClicked()
     }
 }
 
-void MainWindow::onProgressUpdated(int current, int total)
+void MainWindow::onProgressUpdated(int current, int total, const QString& filePath)
 {
     m_ui->progressBar->setValue(current);
     m_ui->progressBar->setFormat(QString("%1 / %2").arg(current).arg(total));
+    
+    // 更新当前文件标签
+    QFileInfo fileInfo(filePath);
+    m_ui->currentFileLabel->setText(QString("当前文件：%1").arg(fileInfo.fileName()));
 }
 
 void MainWindow::onStatsUpdated(const ScanResult& result)

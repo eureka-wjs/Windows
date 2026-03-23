@@ -13,11 +13,6 @@
   <property name="windowTitle">
    <string>AutoDownloadSubtitle - 字幕自动下载工具</string>
   </property>
-  <property name="windowIcon">
-   <iconset>
-    <normaloff>:/icons/icon.ico</normaloff>
-   </iconset>
-  </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="mainLayout">
     <property name="spacing">
@@ -37,76 +32,104 @@
     </property>
     
     <!-- 配置区域 -->
-    <layout class="QFormLayout" name="configLayout">
-     <property name="spacing">
-      <number>8</number>
-     </property>
-     <item row="0" column="0">
-      <widget class="QLabel" name="apiTokenLabel">
+    <item>
+     <layout class="QFormLayout" name="configLayout">
+      <property name="spacing">
+       <number>8</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QLabel" name="apiTokenLabel">
+        <property name="text">
+         <string>API Token:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <layout class="QHBoxLayout" name="apiTokenLayout">
+        <item>
+         <widget class="QLineEdit" name="apiTokenEdit">
+          <property name="placeholderText">
+           <string>输入射手网 API Token（32 位）</string>
+          </property>
+          <property name="echoMode">
+           <enum>QLineEdit::Password</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="verifyTokenButton">
+          <property name="toolTip">
+           <string>验证 API Token 是否有效</string>
+          </property>
+          <property name="text">
+           <string>验证</string>
+          </property>
+          <property name="maximumWidth">
+           <number>50</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="saveTokenButton">
+          <property name="text">
+           <string>保存</string>
+          </property>
+          <property name="maximumWidth">
+           <number>60</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="workingDirLabel">
+        <property name="text">
+         <string>工作目录:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <layout class="QHBoxLayout" name="workingDirLayout">
+        <item>
+         <widget class="QLineEdit" name="workingDirEdit">
+          <property name="placeholderText">
+           <string>拖放文件夹到此处或点击浏览按钮</string>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="browseButton">
+          <property name="text">
+           <string>浏览...</string>
+          </property>
+          <property name="maximumWidth">
+           <number>70</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+     </item>
+     
+     <!-- 调试模式选项 -->
+     <item>
+      <widget class="QCheckBox" name="debugModeCheckBox">
        <property name="text">
-        <string>API Token:</string>
+        <string>调试模式（显示详细处理信息）</string>
+       </property>
+       <property name="toolTip">
+        <string>开启后将显示详细的调试信息，包括 API 请求参数、搜索策略等</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
-      <layout class="QHBoxLayout" name="apiTokenLayout">
-       <item>
-        <widget class="QLineEdit" name="apiTokenEdit">
-         <property name="placeholderText">
-          <string>输入射手网 API Token（32 位）</string>
-         </property>
-         <property name="echoMode">
-          <enum>QLineEdit::Password</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="saveTokenButton">
-         <property name="text">
-          <string>保存</string>
-         </property>
-         <property name="maximumWidth">
-          <number>60</number>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="workingDirLabel">
-       <property name="text">
-        <string>工作目录:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <layout class="QHBoxLayout" name="workingDirLayout">
-       <item>
-        <widget class="QLineEdit" name="workingDirEdit">
-         <property name="placeholderText">
-          <string>拖放文件夹到此处或点击浏览按钮</string>
-         </property>
-         <property name="readOnly">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="browseButton">
-         <property name="text">
-          <string>浏览...</string>
-         </property>
-         <property name="maximumWidth">
-          <number>70</number>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-    </layout>
-    
-    <!-- 拖放区域 -->
-    <widget class="QFrame" name="dropFrame">
+     
+     <!-- 拖放区域 -->
+     <item>
+      <widget class="QFrame" name="dropFrame">
      <property name="minimumSize">
       <size>
        <width>0</width>
@@ -145,9 +168,11 @@
       </item>
      </layout>
     </widget>
+    </item>
     
     <!-- 进度区域 -->
-    <widget class="QFrame" name="progressFrame">
+    <item>
+     <widget class="QFrame" name="progressFrame">
      <property name="frameShape">
       <enum>QFrame::StyledPanel</enum>
      </property>
@@ -168,6 +193,19 @@
         </property>
         <property name="format">
          <string>就绪</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="currentFileLabel">
+        <property name="text">
+         <string>当前文件：-</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+        <property name="textInteractionFlags">
+         <set>Qt::TextSelectableByMouse</set>
         </property>
        </widget>
       </item>
@@ -204,9 +242,11 @@
       </item>
      </layout>
     </widget>
+    </item>
     
     <!-- 控制按钮 -->
-    <layout class="QHBoxLayout" name="buttonLayout">
+    <item>
+     <layout class="QHBoxLayout" name="buttonLayout">
      <item>
       <spacer name="horizontalSpacer2">
        <property name="orientation">
@@ -253,16 +293,33 @@
       </widget>
      </item>
     </layout>
+    </item>
     
     <!-- 日志区域 -->
-    <widget class="QWidget" name="logContainer" native="true">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-       <horstretch>0</horstretch>
-       <verstretch>1</verstretch>
-      </sizepolicy>
-     </property>
-    </widget>
+    <item>
+     <widget class="QWidget" name="logContainer" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>1</verstretch>
+       </sizepolicy>
+      </property>
+      <layout class="QVBoxLayout" name="logContainerLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+      </layout>
+     </widget>
+    </item>
     
    </layout>
   </widget>

@@ -11,8 +11,8 @@
 #include <QEventLoop>
 #include <QTimer>
 #include <QMutex>
-#include "src/models/SubtitleInfo.h"
-#include "src/utils/Logger.h"
+#include "models/SubtitleInfo.h"
+#include "utils/Logger.h"
 
 /**
  * @brief 射手网 API 客户端
@@ -80,6 +80,13 @@ public:
      * @return 是否有效
      */
     bool verifyToken();
+    
+    /**
+     * @brief 检查配额
+     * @param skipLog 是否跳过日志
+     * @return 是否有配额
+     */
+    bool checkQuota(bool skipLog = false);
 
 signals:
     /**
@@ -96,18 +103,11 @@ signals:
     void progress(int current, int total);
 
 private:
-    /**
-     * @brief 检查配额
-     * @param skipLog 是否跳过日志
-     * @return 是否有配额
-     */
-    bool checkQuota(bool skipLog = false);
-    
-    /**
-     * @brief 等待重试
-     * @param seconds 等待秒数
-     */
-    void waitAndRetry(int seconds = 60);
+   /**
+    * @brief 等待重试
+    * @param seconds 等待秒数
+    */
+   void waitAndRetry(int seconds = 60);
     
     /**
      * @brief 发送 GET 请求

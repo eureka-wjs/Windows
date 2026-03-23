@@ -1,0 +1,44 @@
+# 构建目录
+build/
+output/
+bin/
+lib/
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 编译产物
+*.o
+*.obj
+*.exe
+*.dll
+*.a
+*.lib
+*.so
+*.dylib
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+.ninja*
+build.ninja
+
+# Qt
+*.moc
+*.qrc.dep
+*.ui.h
+*.rcc
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.bak
