@@ -12,6 +12,7 @@
 #include <QDateTime>
 #include <QMutex>
 #include "models/VideoFile.h"
+#include "utils/Logger.h"
 
 /**
  * @brief 失败记录结构体
@@ -73,16 +74,25 @@ class HistoryManager : public QObject
     Q_OBJECT
 
 public:
-    explicit HistoryManager(const QString& processedLogPath, 
+    explicit HistoryManager(const QString& processedLogPath,
                            const QString& failedLogPath,
                            QObject* parent = nullptr)
         : QObject(parent)
         , m_processedLogPath(processedLogPath)
         , m_failedLogPath(failedLogPath)
+        , m_logger(nullptr)
     {
         // 确保目录存在
         ensureDirectory(m_processedLogPath);
         ensureDirectory(m_failedLogPath);
+    }
+    
+    /**
+     * @brief 设置日志记录器
+     * @param logger 日志记录器指针
+     */
+    void setLogger(Logger* logger) {
+        m_logger = logger;
     }
     
     /**
@@ -237,6 +247,8 @@ private:
             return;
         }
         
+        qint64 startTime = QDateTime::currentMSecsSinceEpoch();
+        
         QFile file(m_processedLogPath);
         if (!file.exists()) {
             m_processedDataLoaded = true;
@@ -252,17 +264,29 @@ private:
             file.close();
         }
         m_processedDataLoaded = true;
+        
+        qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - startTime;
+        if (m_logger) {
+            m_logger->debug(QString("[HistoryManager] 加载已处理数据完成，耗时 %1ms").arg(elapsed));
+        }
     }
     
     /**
      * @brief 保存已处理数据
      */
     void saveProcessedData() {
+        qint64 startTime = QDateTime::currentMSecsSinceEpoch();
+        
         QFile file(m_processedLogPath);
         if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QJsonDocument doc(QJsonObject::fromVariantMap(m_processedData));
             file.write(doc.toJson(QJsonDocument::Indented));
             file.close();
+            
+            qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - startTime;
+            if (m_logger) {
+                m_logger->debug(QString("[HistoryManager] 保存已处理数据完成，耗时 %1ms，数据大小：%2 字节").arg(elapsed).arg(file.size()));
+            }
         }
     }
     
@@ -273,6 +297,8 @@ private:
         if (m_failedDataLoaded) {
             return;
         }
+        
+        qint64 startTime = QDateTime::currentMSecsSinceEpoch();
         
         QFile file(m_failedLogPath);
         if (!file.exists()) {
@@ -289,17 +315,29 @@ private:
             file.close();
         }
         m_failedDataLoaded = true;
+        
+        qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - startTime;
+        if (m_logger) {
+            m_logger->debug(QString("[HistoryManager] 加载失败数据完成，耗时 %1ms").arg(elapsed));
+        }
     }
     
     /**
      * @brief 保存失败数据
      */
     void saveFailedData() {
+        qint64 startTime = QDateTime::currentMSecsSinceEpoch();
+        
         QFile file(m_failedLogPath);
         if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QJsonDocument doc(m_failedData);
             file.write(doc.toJson(QJsonDocument::Indented));
             file.close();
+            
+            qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - startTime;
+            if (m_logger) {
+                m_logger->debug(QString("[HistoryManager] 保存失败数据完成，耗时 %1ms").arg(elapsed));
+            }
         }
     }
 
@@ -314,6 +352,7 @@ private:
     bool m_failedDataLoaded = false;     ///< 失败数据是否已加载
     
     QMutex m_mutex;                 ///< 互斥锁
+    Logger* m_logger;               ///< 日志记录器指针
 };
 
 #endif // HISTORYMANAGER_H

@@ -1,8 +1,10 @@
 #include "SubtitleManager.h"
+#include "core/ConfigManager.h"
 #include <QFileInfo>
 #include <QDir>
 #include <QThread>
 #include <QCoreApplication>
+#include <QDateTime>
 
 bool SubtitleManager::processVideo(const QString& videoPath, bool force)
 {
@@ -18,7 +20,14 @@ ScanResult SubtitleManager::scanFolder(const QString& folderPath, bool force)
     
     m_stopRequested = false;
     
+    // 使用配置中的调试模式
     bool isDebugMode = m_config.debugMode();
+    
+    // 【诊断日志】调试模式状态检查
+    m_logger->debug("═══════════════════════════════════════════════════════");
+    m_logger->debug("【诊断】scanFolder 开始");
+    m_logger->debug(QString("  m_config.debugMode() = %1").arg(isDebugMode ? "true" : "false"));
+    m_logger->debug("═══════════════════════════════════════════════════════");
     
     if (isDebugMode) {
         m_logger->debug("═══════════════════════════════════════════════════════");
@@ -27,6 +36,10 @@ ScanResult SubtitleManager::scanFolder(const QString& folderPath, bool force)
         m_logger->debug(QString("  强制模式：%1").arg(force ? "是" : "否"));
         m_logger->debug(QString("  最小文件大小：%1 字节").arg(m_config.minFileSize()));
         m_logger->debug(QString("  视频扩展名：%1").arg(m_config.videoExtensions().join(", ")));
+    }
+    
+    if (m_logger) {
+        m_logger->info(QString("开始扫描：%1").arg(folderPath));
     }
     
     // 稳定性检查：确保已正确初始化
@@ -44,10 +57,6 @@ ScanResult SubtitleManager::scanFolder(const QString& folderPath, bool force)
         }
         emit processingComplete(result);
         return result;
-    }
-    
-    if (m_logger) {
-        m_logger->info(QString("开始扫描：%1").arg(folderPath));
     }
     
     // 检查配额
@@ -174,9 +183,14 @@ ScanResult SubtitleManager::scanFolder(const QString& folderPath, bool force)
         // 批量处理延迟
         if (m_config.batchDelay() > 0) {
             if (isDebugMode) {
-                m_logger->debug(QString("等待 %1 秒...").arg(m_config.batchDelay()));
+                m_logger->warning(QString("⏱️ 批量处理延迟：等待 %1 秒...").arg(m_config.batchDelay()));
             }
+            qint64 startTime = QDateTime::currentSecsSinceEpoch();
             QThread::msleep(m_config.batchDelay() * 1000);
+            qint64 elapsed = QDateTime::currentSecsSinceEpoch() - startTime;
+            if (isDebugMode) {
+                m_logger->warning(QString("⏱️ 批量延迟完成，实际耗时 %1 秒").arg(elapsed));
+            }
         }
     }
     
@@ -243,7 +257,17 @@ bool SubtitleManager::downloadSubtitle(const VideoFile& video, bool force)
     QString filename = video.name();
     QString folder = video.folder();
     QString failureReason = "未知错误";
+    
+    // 使用配置中的调试模式
     bool isDebugMode = m_config.debugMode();
+    
+    // 【诊断日志】downloadSubtitle 调试模式状态检查
+    if (m_logger) {
+        m_logger->debug("═══════════════════════════════════════════════════════");
+        m_logger->debug("【诊断】downloadSubtitle 开始");
+        m_logger->debug(QString("  m_config.debugMode() = %1").arg(isDebugMode ? "true" : "false"));
+        m_logger->debug("═══════════════════════════════════════════════════════");
+    }
     
     if (isDebugMode) {
         m_logger->debug("═══════════════════════════════════════════════════════");

@@ -76,6 +76,8 @@ public:
             ConfigManager::failedLogPath(),
             this
         );
+        // 设置 HistoryManager 的 logger
+        m_history->setLogger(m_logger);
         
         // 创建 API 对象
         m_api = new AssrtAPI(this);
@@ -109,6 +111,11 @@ public:
      */
     void reloadConfig() {
         m_config = m_configManager->loadConfig();
+        // 【诊断日志】记录 reloadConfig 后的调试模式值
+        if (m_logger) {
+            m_logger->debug(QString("[诊断] reloadConfig 完成：debugMode=%1")
+                .arg(m_config.debugMode() ? "true" : "false"));
+        }
     }
     
     /**
@@ -135,6 +142,12 @@ public:
      * @return API 对象
      */
     AssrtAPI* api() const { return m_api; }
+    
+    /**
+     * @brief 获取历史记录管理器
+     * @return 历史记录管理器
+     */
+    HistoryManager* history() const { return m_history; }
 
 signals:
     /**

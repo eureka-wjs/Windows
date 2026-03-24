@@ -3,6 +3,7 @@
 #include <QUrlQuery>
 #include <QThread>
 #include <QCoreApplication>
+#include <QDateTime>
 
 const QString API_URL = "https://api.assrt.net/v1";
 
@@ -188,7 +189,7 @@ bool AssrtAPI::download(int subId, const QString& savePath, const QString& video
     }
     
     if (m_logger) {
-        m_logger->info("开始下载字幕...");
+        m_logger->info("📥 开始下载字幕...");
     }
     
     // 检查配额
@@ -204,13 +205,21 @@ bool AssrtAPI::download(int subId, const QString& savePath, const QString& video
     int consecutive493 = 0;
     
     for (int attempt = 0; attempt < MAX_RETRIES; ++attempt) {
+        if (m_logger) {
+            m_logger->debug(QString("下载尝试：%1/%2").arg(attempt + 1).arg(MAX_RETRIES));
+        }
+        
         // 获取详情
+        if (m_logger) {
+            m_logger->debug("  获取字幕详情...");
+        }
         SubtitleInfo sub = getDetail(subId);
         if (sub.downloadUrl().isEmpty()) {
             if (m_logger) {
                 m_logger->error("无法获取字幕详情或下载地址");
             }
             if (attempt < MAX_RETRIES - 1) {
+                m_logger->warning("  等待 60 秒后重试...");
                 waitAndRetry(60);
                 continue;
             }
@@ -219,13 +228,15 @@ bool AssrtAPI::download(int subId, const QString& savePath, const QString& video
         
         // 下载文件
         if (m_logger) {
-            m_logger->info("下载中...");
+            m_logger->info(QString("  🌐 开始下载：ID=%1").arg(subId));
         }
         
         QUrl url(sub.downloadUrl());
         QNetworkRequest request(url);
-        request.setHeader(QNetworkRequest::UserAgentHeader, 
+        request.setHeader(QNetworkRequest::UserAgentHeader,
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36");
+        
+        qint64 downloadStartTime = QDateTime::currentMSecsSinceEpoch();
         
         QNetworkReply* reply = m_networkManager->get(request);
         
@@ -236,25 +247,32 @@ bool AssrtAPI::download(int subId, const QString& savePath, const QString& video
             reply->abort();
             loop.quit();
         });
+        
+        if (m_logger) {
+            m_logger->debug(QString("  ⏳ 等待下载完成（超时：%1 秒）...").arg(TIMEOUT));
+        }
+        
         loop.exec();
+        
+        qint64 downloadElapsed = QDateTime::currentMSecsSinceEpoch() - downloadStartTime;
         
         if (reply->error() != QNetworkReply::NoError) {
             int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
             
             if (m_logger) {
-                m_logger->error(QString("下载失败：%1").arg(reply->errorString()));
+                m_logger->error(QString("❌ 下载失败：%1，耗时 %2ms").arg(reply->errorString()).arg(downloadElapsed));
             }
             
             // 493 错误特殊处理
             if (httpStatus == 493) {
                 consecutive493++;
                 if (m_logger) {
-                    m_logger->warning(QString("493 错误（连续第 %1 次）").arg(consecutive493));
+                    m_logger->warning(QString("  ⚠️ 493 错误（连续第 %1 次）").arg(consecutive493));
                 }
                 
                 if (consecutive493 >= 2) {
                     if (m_logger) {
-                        m_logger->warning("连续 2 次 493 错误，判断为下载配额不足，等待 120 秒...");
+                        m_logger->warning("  连续 2 次 493 错误，判断为下载配额不足，等待 120 秒...");
                     }
                     if (attempt < MAX_RETRIES - 1) {
                         waitAndRetry(120);
@@ -262,12 +280,16 @@ bool AssrtAPI::download(int subId, const QString& savePath, const QString& video
                     }
                 } else {
                     if (attempt < MAX_RETRIES - 1) {
+                        m_logger->warning("  等待 60 秒后重试...");
                         waitAndRetry(60);
                         continue;
                     }
                 }
             } else if (httpStatus >= 500) {
                 // 服务器错误，重试
+                if (m_logger) {
+                    m_logger->warning(QString("  服务器错误 (HTTP %1)，等待 60 秒后重试...").arg(httpStatus));
+                }
                 if (attempt < MAX_RETRIES - 1) {
                     waitAndRetry(60);
                     continue;
@@ -276,6 +298,10 @@ bool AssrtAPI::download(int subId, const QString& savePath, const QString& video
             
             reply->deleteLater();
             return false;
+        }
+        
+        if (m_logger) {
+            m_logger->success(QString("  ✅ 下载完成，耗时 %1ms").arg(downloadElapsed));
         }
         
         // 保存文件
@@ -369,16 +395,23 @@ bool AssrtAPI::checkQuota(bool skipLog)
 void AssrtAPI::waitAndRetry(int seconds)
 {
     if (m_logger) {
-        m_logger->log(QString("开始等待 %1 秒...").arg(seconds));
+        m_logger->warning(QString("⏱️ 开始等待 %1 秒...（可能是配额限制或网络错误）").arg(seconds));
     }
     
+    qint64 startTime = QDateTime::currentSecsSinceEpoch();
+    
     for (int i = seconds; i > 0; --i) {
+        if (m_logger && i % 10 == 0) {
+            m_logger->log(QString("  等待中... 剩余 %1 秒").arg(i));
+        }
         QCoreApplication::processEvents();
         QThread::msleep(1000);
     }
     
+    qint64 elapsed = QDateTime::currentSecsSinceEpoch() - startTime;
+    
     if (m_logger) {
-        m_logger->log("等待完成");
+        m_logger->warning(QString("⏱️ 等待完成，实际耗时 %1 秒").arg(elapsed));
     }
 }
 
@@ -396,6 +429,12 @@ QJsonDocument AssrtAPI::sendGetRequest(const QString& url, const QMap<QString, Q
     request.setHeader(QNetworkRequest::UserAgentHeader,
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36");
     
+    if (m_logger) {
+        m_logger->debug(QString("🌐 发送 GET 请求：%1").arg(fullUrl.toString().left(100)));
+    }
+    
+    qint64 startTime = QDateTime::currentMSecsSinceEpoch();
+    
     QNetworkReply* reply = m_networkManager->get(request);
     
     // 等待响应
@@ -405,7 +444,24 @@ QJsonDocument AssrtAPI::sendGetRequest(const QString& url, const QMap<QString, Q
         reply->abort();
         loop.quit();
     });
+    
+    if (m_logger) {
+        m_logger->debug(QString("  ⏳ 等待 API 响应（超时：%1 秒）...").arg(TIMEOUT));
+    }
+    
     loop.exec();
+    
+    qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - startTime;
+    
+    if (reply->error() == QNetworkReply::NoError) {
+        if (m_logger) {
+            m_logger->debug(QString("  ✅ API 响应完成，耗时 %1ms").arg(elapsed));
+        }
+    } else {
+        if (m_logger) {
+            m_logger->warning(QString("  ⚠️ API 请求失败：%1，耗时 %2ms").arg(reply->errorString()).arg(elapsed));
+        }
+    }
     
     QJsonDocument result;
     
